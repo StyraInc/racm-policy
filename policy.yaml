@@ -19,6 +19,8 @@ spec:
               kind: Namespace
               metadata:
                 name: styra-system
+                labels:
+                  openpolicyagent.org/webhook: ignore
           - complianceType: musthave
             objectDefinition:
               apiVersion: v1
