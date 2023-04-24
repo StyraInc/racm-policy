@@ -1,0 +1,173 @@
+apiVersion: policy.open-cluster-management.io/v1
+kind: Policy
+metadata:
+  name: styra-das-system
+spec:
+  disabled: false
+  policy-templates:
+    - objectDefinition:
+        apiVersion: policy.open-cluster-management.io/v1
+        kind: ConfigurationPolicy
+        metadata:
+          name: das-secret-and-namespace
+        spec:
+          remediationAction: enforce
+          object-templates:
+          - complianceType: musthave
+            objectDefinition:
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: styra-system
+          - complianceType: musthave
+            objectDefinition:
+              apiVersion: v1
+              kind: Secret
+              metadata:
+                name: styra-das-api-key
+                namespace: styra-system
+              type: Opaque
+              data:
+                api_key: '{{hub fromSecret "" "styra-das-api-key" "api_key" hub}}'
+          - complianceType: musthave
+            objectDefinition:
+              apiVersion: image.openshift.io/v1
+              kind: ImageStream
+              metadata:
+                  name: ose-cli-styra
+                  namespace: styra-system
+          - complianceType: musthave
+            objectDefinition:
+              apiVersion: build.openshift.io/v1
+              kind: BuildConfig
+              metadata:
+                name: ose-cli-with-installscript-and-jq
+                namespace: styra-system
+              spec:
+                source:
+                  type: Git
+                  git:
+                    uri: https://github.com/StyraInc/racm-policy.git
+                strategy:
+                  type: Docker
+                  dockerStrategy:
+                    dockerfilePath: Dockerfile
+                output:
+                  to:
+                    kind: ImageStreamTag
+                    name: ose-cli-styra:latest
+                triggers:
+                  - type: ConfigChange
+    - objectDefinition:
+        apiVersion: policy.open-cluster-management.io/v1
+        kind: ConfigurationPolicy
+        metadata:
+          name: styra-system-install
+        spec:
+          remediationAction: enforce
+          object-templates:
+          - complianceType: musthave
+            objectDefinition:
+              apiVersion: v1
+              kind: ServiceAccount
+              metadata:
+                name: styra-installer
+                namespace: styra-system
+          - complianceType: musthave
+            objectDefinition:
+              kind: ClusterRoleBinding
+              apiVersion: rbac.authorization.k8s.io/v1
+              metadata:
+                name: styra-installer-clusteradmin
+              subjects:
+                - kind: ServiceAccount
+                  name: styra-installer
+                  namespace: styra-system
+              roleRef:
+                apiGroup: rbac.authorization.k8s.io
+                kind: ClusterRole
+                name: cluster-admin
+          - complianceType: musthave
+            objectDefinition:
+              apiVersion: batch/v1
+              kind: Job
+              metadata:
+                name: styra-installer
+                namespace: styra-system
+              spec:
+                template:
+                  spec:
+                    containers:
+                    - name: styra-installer-script
+                      image: image-registry.openshift-image-registry.svc:5000/styra-system/ose-cli-styra:latest
+                      env:
+                      - name: CLUSTER_NAME
+                        value: '{{ fromSecret "open-cluster-management-agent" "hub-kubeconfig-secret" "cluster-name" | base64dec }}'
+                      - name: API_TOKEN
+                        valueFrom:
+                          secretKeyRef:
+                            name: styra-das-api-key
+                            key: api_key
+                      volumeMounts:
+                      - name: styra-das-install-script
+                        mountPath: /tmp
+                      securityContext:
+                        allowPrivilegeEscalation: false
+                        capabilities:
+                          drop:
+                            - ALL
+                        runAsNonRoot: true
+                        seccompProfile:
+                          type: RuntimeDefault
+                    serviceAccountName: styra-installer
+                    restartPolicy: Never
+                    volumes:
+                    - name: styra-das-install-script
+                      configMap:
+                        name: styra-das-install-script
+    - objectDefinition:
+        apiVersion: policy.open-cluster-management.io/v1
+        kind: ConfigurationPolicy
+        metadata:
+          name: opa-statefulset
+        spec:
+          remediationAction: inform
+          object-templates:
+            - complianceType: musthave
+              objectDefinition:
+                apiVersion: apps/v1
+                kind: StatefulSet
+                metadata:
+                  name: opa
+                  namespace: styra-system
+                spec:
+                  replicas: 3
+                status:
+                  replicas: 3
+                  availableReplicas: 3
+                  currentReplicas: 3
+---
+apiVersion: policy.open-cluster-management.io/v1
+kind: PlacementBinding
+metadata:
+  name: styra-das-system
+placementRef:
+  name: styra-das-system
+  kind: PlacementRule
+  apiGroup: apps.open-cluster-management.io
+subjects:
+  - name: styra-das-system
+    kind: Policy
+    apiGroup: policy.open-cluster-management.io
+---
+apiVersion: apps.open-cluster-management.io/v1
+kind: PlacementRule
+metadata:
+  name: styra-das-system
+spec:
+  clusterConditions:
+    - status: "True"
+      type: ManagedClusterConditionAvailable
+  clusterSelector:
+    matchExpressions:
+      - {key: name, operator: In, values: ["gcp-1", "gcp-2", "gcp-3"]}
