@@ -57,3 +57,9 @@ replicaset.apps/datasources-agent-5bd865b6d7   1         1         1       2m37s
 NAME                        COMPLETIONS   DURATION   AGE
 job.batch/styra-installer   1/1           4m25s      6m58s
 ```
+
+## References
+
+* https://www.redhat.com/en/technologies/management/advanced-cluster-management
+* https://open-cluster-management.io/getting-started/integration/policy-controllers
+* https://open-cluster-management.io/getting-started/integration/policy-framework/
