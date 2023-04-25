@@ -27,16 +27,14 @@ that works best for you.
 
 1. Create a new API token in Styra DAS (https://${DAS_TENANT_URL}/access-control/api-tokens/added). Make
 sure the token has WorkspaceAdministrator permissions.
-2. Create a new secret in the target namespace with the API token:
+2. Create a new secret in the target namespace with the API token and the DAS tenant URL. The tenat URL should be similar
+to this: `https://tenant.styra.com`.
 ```shell
-oc create secret generic styra-das-api-key --from-literal=api_key=${API_KEY}
+oc create secret generic styra-das-api-key --from-literal=api_key=${API_KEY} --from-literal=das_tenant=${DAS_TENANT_URL} -n styra-system
 ```
-3. Edit policy.yaml and set the spec.clusterSelector.matchExpressions if you don't want RACM policies
+4. Edit policy.yaml and set the spec.clusterSelector.matchExpressions if you don't want RACM policies
 to be applied to all clusters including the hub.
-4. Apply the policies:
-```shell
-oc apply -f policy.yaml
-```
+4. Apply the policies: `oc apply -f policy.yaml`
 5. This should start the process described above on all RACM-managed clusters. Running
 `oc get all -n styra-system` should show a similar output after a few minutes:
 ```shell

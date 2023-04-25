@@ -105,6 +105,8 @@ spec:
                       env:
                       - name: CLUSTER_NAME
                         value: '{{ fromSecret "open-cluster-management-agent" "hub-kubeconfig-secret" "cluster-name" | base64dec }}'
+                      - name: DAS_TENANT
+                        value: '{{hub fromSecret "" "styra-das-api-key" "das_tenant" hub}}'
                       - name: API_TOKEN
                         valueFrom:
                           secretKeyRef:
