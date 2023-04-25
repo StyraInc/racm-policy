@@ -110,9 +110,6 @@ spec:
                           secretKeyRef:
                             name: styra-das-api-key
                             key: api_key
-                      volumeMounts:
-                      - name: styra-das-install-script
-                        mountPath: /tmp
                       securityContext:
                         allowPrivilegeEscalation: false
                         capabilities:
@@ -123,10 +120,6 @@ spec:
                           type: RuntimeDefault
                     serviceAccountName: styra-installer
                     restartPolicy: Never
-                    volumes:
-                    - name: styra-das-install-script
-                      configMap:
-                        name: styra-das-install-script
     - objectDefinition:
         apiVersion: policy.open-cluster-management.io/v1
         kind: ConfigurationPolicy
@@ -171,5 +164,4 @@ spec:
     - status: "True"
       type: ManagedClusterConditionAvailable
   clusterSelector:
-    matchExpressions:
-      - {key: name, operator: In, values: ["gcp-1", "gcp-2", "gcp-3"]}
+    matchExpressions: []
