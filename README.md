@@ -3,6 +3,11 @@
 Policies for RedHat Advanced Cluster Manager (RACM) that will ensure the Styra 
 installation of OPA is performed on each managed cluster.
 
+## Warranty and Support
+
+This repository is meant to be a reference for Styra customers to build their own RACM policies. Styra doesn't guarantee
+the policies will work in all environments and is not responsible for any issues that may arise from using them.
+
 ## Description
 
 Each OpenShift cluster managed by RACM needs to have a corresponding Styra DAS system created.
